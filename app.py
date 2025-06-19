@@ -139,9 +139,6 @@ if uploaded_file:
     col2.metric("Largest Loss", f"{largest_loss:.2f}")
     col3.metric("Avg Fee/Trade", f"{fee_per_trade:.6f}")
     col3.metric("Fee Impact (%)", f"{fee_impact_pct:.2f}")
-    col3.metric("Avg Slippage", avg_slippage)
-    col3.metric("Avg Execution Speed", avg_execution_speed)
-    col3.metric("Avg Holding Duration", avg_holding_duration_fmt)
     col3.metric("Buy Bias (%)", f"{buy_bias:.2f}")
     col3.metric("Sell Bias (%)", f"{sell_bias:.2f}")
 
