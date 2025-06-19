@@ -85,10 +85,6 @@ if uploaded_file:
                          (df['Time Diff'] <= 10)]['Time Diff'].count()
     partial_fills = df['Trade Id'].isnull().sum()
 
-    avg_slippage = "N/A"
-    avg_execution_speed = "N/A"
-    avg_holding_duration_fmt = "N/A"
-
     match_col = None
     for col in ['Client Order Id', 'Trade Id']:
         if col in df.columns:
