@@ -154,7 +154,7 @@ if uploaded_file:
             y=hour_counts.values,
             labels={'x': 'Hour (24h)', 'y': 'Number of Trades'},
             title='Trades by Hour of Day',
-            text_auto=True  # Show values on bars
+            text_auto=True  # <-- CHANGED: show values on bars
         )
         st.plotly_chart(fig1, use_container_width=True)
 
@@ -165,7 +165,7 @@ if uploaded_file:
         y=currency_dist.values,
         labels={'x': 'Currency', 'y': 'Number of Trades'},
         title='Currency Distribution',
-        text_auto=True  # Show values on bars
+        text_auto=True  # <-- CHANGED: show values on bars
     )
     st.plotly_chart(fig2, use_container_width=True)
 
@@ -177,7 +177,7 @@ if uploaded_file:
         title="Buy vs Sell",
         hole=0.6
     )
-    fig3.update_traces(textinfo='label+value+percent')  # Show label, value, and percent
+    fig3.update_traces(textinfo='label+value+percent')  # <-- CHANGED: label, value, percent
     st.plotly_chart(fig3, use_container_width=True)
 
     # 4. P/L Histogram
@@ -186,7 +186,7 @@ if uploaded_file:
         x='Indicative P/L',
         nbins=30,
         title="P/L Distribution",
-        text_auto=True  # Show values on bars
+        text_auto=True  # <-- CHANGED: show values on bars
     )
     st.plotly_chart(fig4, use_container_width=True)
 
@@ -197,7 +197,7 @@ if uploaded_file:
         nbins=30,
         title="Trade Size Distribution",
         labels={'x': 'Dealt Amount (abs)'},
-        text_auto=True  # Show values on bars
+        text_auto=True  # <-- CHANGED: show values on bars
     )
     st.plotly_chart(fig5, use_container_width=True)
 
