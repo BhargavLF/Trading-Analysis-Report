@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+import plotly.express as px
 
 st.set_page_config(page_title="Trading Analysis Dashboard", layout="wide")
 
@@ -23,14 +23,12 @@ if uploaded_file:
     df['Dealt Currency'] = df['Dealt Currency'].str.strip().str.upper()
     df['Trade Type'] = df['Trade Type'].str.strip()
 
-    # -- Use Execution Time for time-based metrics --
     df = df[df['Execution Time'].notnull()]
     df['Exec_Date'] = df['Execution Time'].dt.date
     df['Exec_Year'] = df['Execution Time'].dt.year
     df['Exec_Month'] = df['Execution Time'].dt.to_period('M')
     df['Exec_Week'] = df['Execution Time'].dt.isocalendar().week
 
-    # Average trades per day, week, month, year
     avg_trades_per_day = df.groupby('Exec_Date').size().mean()
     avg_trades_per_week = df.groupby(['Exec_Year', 'Exec_Week']).size().mean()
     avg_trades_per_month = df.groupby('Exec_Month').size().mean()
@@ -43,7 +41,6 @@ if uploaded_file:
     avg_trade_size = df['Dealt Amount'].abs().mean()
     trade_size_pref = 'Small' if avg_trade_size < 50000 else 'Moderate' if avg_trade_size < 500000 else 'Large'
 
-    # Consistency (by hour)
     if df['Execution Time'].notnull().any():
         df['Hour'] = df['Execution Time'].dt.hour
         hour_counts = df['Hour'].value_counts().sort_index()
@@ -56,20 +53,17 @@ if uploaded_file:
         consistency = "Unknown"
         hour_counts = pd.Series(dtype=int)
 
-    # Buy/Sell bias
     buy_count = (df['Buy/Sell'] == 'Buy').sum()
     sell_count = (df['Buy/Sell'] == 'Sell').sum()
     buy_bias = buy_count / total_trades * 100
     sell_bias = sell_count / total_trades * 100
     direction_bias = "Buy" if buy_bias > sell_bias else "Sell"
 
-    # Trades per currency
     currency_trade_counts = df['Dealt Currency'].value_counts()
     eur_trades = currency_trade_counts.get('EUR', 0)
     gbp_trades = currency_trade_counts.get('GBP', 0)
     aud_trades = currency_trade_counts.get('AUD', 0)
 
-    # Profit/Loss
     profits = df[df['Indicative P/L'] > 0]['Indicative P/L']
     losses = df[df['Indicative P/L'] < 0]['Indicative P/L']
     wins_over_losses_ratio = len(profits) / len(losses) if len(losses) > 0 else np.nan
@@ -77,12 +71,10 @@ if uploaded_file:
     biggest_win = df['Indicative P/L'].max()
     largest_loss = df['Indicative P/L'].min()
 
-    # Fee sensitivity
     total_fee = df['Fee'].sum()
     fee_per_trade = df['Fee'].mean()
     fee_impact_pct = (total_fee / (profits.sum() + abs(losses.sum()))) * 100 if (profits.sum() + abs(losses.sum())) > 0 else np.nan
 
-    # Patterns
     df = df.sort_values('Execution Time')
     df['Next Side'] = df['Buy/Sell'].shift(-1)
     df['Next Currency'] = df['Dealt Currency'].shift(-1)
@@ -93,12 +85,10 @@ if uploaded_file:
                          (df['Time Diff'] <= 10)]['Time Diff'].count()
     partial_fills = df['Trade Id'].isnull().sum()
 
-    # --- Avg Holding Duration Calculation ---
     avg_slippage = "N/A"
     avg_execution_speed = "N/A"
     avg_holding_duration_fmt = "N/A"
 
-    # Try to match Buy/Sell pairs by Trade Id, Dealt Currency, and Dealt Amount
     match_col = None
     for col in ['Client Order Id', 'Trade Id']:
         if col in df.columns:
@@ -119,10 +109,7 @@ if uploaded_file:
         if not merged.empty:
             avg_holding_duration = merged['Holding Duration'].mean()
             avg_holding_duration_fmt = f"{int(avg_holding_duration//60)}h {int(avg_holding_duration%60)}m"
-    else:
-        avg_holding_duration_fmt = "N/A"
 
-    # Style summary
     style_line = (
         f"Aggressive {'high' if avg_trades_per_day > 10 else 'low'}-frequency trader, "
         f"{trade_size_pref} positions, {focus_currency}-centric, "
@@ -130,7 +117,6 @@ if uploaded_file:
         f"{'buy' if buy_bias > sell_bias else 'sell'} bias, {consistency} trading hours."
     )
 
-    # Display metrics
     st.markdown("### Key Metrics")
     col1, col2, col3 = st.columns(3)
     col1.metric("Total Trades", total_trades)
@@ -166,84 +152,30 @@ if uploaded_file:
     st.markdown("### Trader Style Summary")
     st.success(style_line)
 
-    # --- Graphs Section ---
     st.markdown("## 📊 Visual Insights")
 
-    # 1. Trade Frequency by Hour (Bar Chart) with values
+    # 1. Trade Frequency by Hour
     if not hour_counts.empty:
-        fig, ax = plt.subplots()
-        bars = ax.bar(hour_counts.index, hour_counts.values, color='skyblue')
-        ax.set_title("Trades by Hour of Day")
-        ax.set_xlabel("Hour (24h)")
-        ax.set_ylabel("Number of Trades")
-        for bar in bars:
-            height = bar.get_height()
-            ax.annotate(f'{int(height)}',
-                        xy=(bar.get_x() + bar.get_width() / 2, height),
-                        xytext=(0, 3),
-                        textcoords="offset points",
-                        ha='center', va='bottom')
-        st.pyplot(fig, use_container_width=True)
+        fig1 = px.bar(x=hour_counts.index, y=hour_counts.values, labels={'x': 'Hour (24h)', 'y': 'Number of Trades'}, title='Trades by Hour of Day')
+        st.plotly_chart(fig1, use_container_width=True)
 
-    # 2. Currency Distribution (Bar Chart) with values
-    fig2, ax2 = plt.subplots()
+    # 2. Currency Distribution
     currency_dist = df['Dealt Currency'].value_counts()
-    bars2 = ax2.bar(currency_dist.index, currency_dist.values, color='teal')
-    ax2.set_title("Currency Distribution")
-    ax2.set_xlabel("Currency")
-    ax2.set_ylabel("Number of Trades")
-    for bar in bars2:
-        height = bar.get_height()
-        ax2.annotate(f'{int(height)}',
-                     xy=(bar.get_x() + bar.get_width() / 2, height),
-                     xytext=(0, 3),
-                     textcoords="offset points",
-                     ha='center', va='bottom')
-    st.pyplot(fig2, use_container_width=True)
+    fig2 = px.bar(x=currency_dist.index, y=currency_dist.values, labels={'x': 'Currency', 'y': 'Number of Trades'}, title='Currency Distribution')
+    st.plotly_chart(fig2, use_container_width=True)
 
-    # 3. Buy vs Sell Distribution (Pie Chart) with values
-    fig3, ax3 = plt.subplots()
+    # 3. Buy vs Sell Pie
     buy_sell_counts = df['Buy/Sell'].value_counts()
-    wedges, texts, autotexts = ax3.pie(
-        buy_sell_counts,
-        labels=buy_sell_counts.index,
-        autopct=lambda pct: f'{pct:.1f}%\n({int(pct/100.*sum(buy_sell_counts))})',
-        startangle=90,
-        colors=["#4CAF50", "#F44336"]
-    )
-    ax3.set_ylabel("")
-    ax3.set_title("Buy vs Sell")
-    st.pyplot(fig3, use_container_width=True)
+    fig3 = px.pie(values=buy_sell_counts.values, names=buy_sell_counts.index, title="Buy vs Sell", hole=0.3)
+    st.plotly_chart(fig3, use_container_width=True)
 
-    # 4. P/L Distribution (Histogram) with values
-    fig4, ax4 = plt.subplots()
-    n, bins, patches = ax4.hist(df['Indicative P/L'], bins=30, color='orange', edgecolor='black')
-    ax4.set_title("P/L Distribution")
-    ax4.set_xlabel("Indicative P/L")
-    ax4.set_ylabel("Number of Trades")
-    for i in range(len(patches)):
-        if n[i] > 0:
-            ax4.annotate(f'{int(n[i])}',
-                         xy=(patches[i].get_x() + patches[i].get_width() / 2, n[i]),
-                         xytext=(0, 3),
-                         textcoords="offset points",
-                         ha='center', va='bottom')
-    st.pyplot(fig4, use_container_width=True)
+    # 4. P/L Histogram
+    fig4 = px.histogram(df, x='Indicative P/L', nbins=30, title="P/L Distribution")
+    st.plotly_chart(fig4, use_container_width=True)
 
-    # 5. Trade Size Distribution (Histogram) with values
-    fig5, ax5 = plt.subplots()
-    n2, bins2, patches2 = ax5.hist(df['Dealt Amount'].abs(), bins=30, color='purple', edgecolor='black')
-    ax5.set_title("Trade Size Distribution")
-    ax5.set_xlabel("Dealt Amount (abs)")
-    ax5.set_ylabel("Number of Trades")
-    for i in range(len(patches2)):
-        if n2[i] > 0:
-            ax5.annotate(f'{int(n2[i])}',
-                         xy=(patches2[i].get_x() + patches2[i].get_width() / 2, n2[i]),
-                         xytext=(0, 3),
-                         textcoords="offset points",
-                         ha='center', va='bottom')
-    st.pyplot(fig5, use_container_width=True)
+    # 5. Trade Size Histogram
+    fig5 = px.histogram(df, x=df['Dealt Amount'].abs(), nbins=30, title="Trade Size Distribution", labels={'x': 'Dealt Amount (abs)'})
+    st.plotly_chart(fig5, use_container_width=True)
 
     st.markdown("### Raw Data (first 10 rows)")
     st.dataframe(df.head(10))
