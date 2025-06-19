@@ -149,25 +149,56 @@ if uploaded_file:
 
     # 1. Trade Frequency by Hour
     if not hour_counts.empty:
-        fig1 = px.bar(x=hour_counts.index, y=hour_counts.values, labels={'x': 'Hour (24h)', 'y': 'Number of Trades'}, title='Trades by Hour of Day')
+        fig1 = px.bar(
+            x=hour_counts.index,
+            y=hour_counts.values,
+            labels={'x': 'Hour (24h)', 'y': 'Number of Trades'},
+            title='Trades by Hour of Day',
+            text_auto=True  # Show values on bars
+        )
         st.plotly_chart(fig1, use_container_width=True)
 
     # 2. Currency Distribution
     currency_dist = df['Dealt Currency'].value_counts()
-    fig2 = px.bar(x=currency_dist.index, y=currency_dist.values, labels={'x': 'Currency', 'y': 'Number of Trades'}, title='Currency Distribution')
+    fig2 = px.bar(
+        x=currency_dist.index,
+        y=currency_dist.values,
+        labels={'x': 'Currency', 'y': 'Number of Trades'},
+        title='Currency Distribution',
+        text_auto=True  # Show values on bars
+    )
     st.plotly_chart(fig2, use_container_width=True)
 
     # 3. Buy vs Sell Pie
     buy_sell_counts = df['Buy/Sell'].value_counts()
-    fig3 = px.pie(values=buy_sell_counts.values, names=buy_sell_counts.index, title="Buy vs Sell", hole=0.3)
+    fig3 = px.pie(
+        values=buy_sell_counts.values,
+        names=buy_sell_counts.index,
+        title="Buy vs Sell",
+        hole=0.6
+    )
+    fig3.update_traces(textinfo='label+value+percent')  # Show label, value, and percent
     st.plotly_chart(fig3, use_container_width=True)
 
     # 4. P/L Histogram
-    fig4 = px.histogram(df, x='Indicative P/L', nbins=30, title="P/L Distribution")
+    fig4 = px.histogram(
+        df,
+        x='Indicative P/L',
+        nbins=30,
+        title="P/L Distribution",
+        text_auto=True  # Show values on bars
+    )
     st.plotly_chart(fig4, use_container_width=True)
 
     # 5. Trade Size Histogram
-    fig5 = px.histogram(df, x=df['Dealt Amount'].abs(), nbins=30, title="Trade Size Distribution", labels={'x': 'Dealt Amount (abs)'})
+    fig5 = px.histogram(
+        df,
+        x=df['Dealt Amount'].abs(),
+        nbins=30,
+        title="Trade Size Distribution",
+        labels={'x': 'Dealt Amount (abs)'},
+        text_auto=True  # Show values on bars
+    )
     st.plotly_chart(fig5, use_container_width=True)
 
     st.markdown("### Raw Data (first 10 rows)")
